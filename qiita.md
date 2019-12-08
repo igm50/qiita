@@ -1,7 +1,7 @@
 # GraphQL ってどうやって使えばいいんだってばよ
 
 前回の記事で開発環境が構築できたので、やれ開発だーと意気込んでいたところ、DB 設計で出鼻をくじかれました。
-通常の DB ならスキーマ分類、テーブル定義、カラムのデータ型選択というように勝手がわかるのですが、QraphQL が間に挟まるとどうなるか想像もつきません。
+通常の SQL と RDBMS を使った構築ならある程度勝手がわかるのですが、QraphQL が間に挟まるとどうなるか想像もつきません。
 
 というわけで、まずは GraphQL についてまとめることにしました。
 本記事の目標は、GraphQL を[完全に理解した](https://mohritaroh.hateblo.jp/entry/2019/08/18/164000)と言えるようになることです。
@@ -11,11 +11,11 @@
 GraphQL は、クエリ言語(QL)の一種です。で、クエリ言語って？
 
 ちょっと私のグーグル力に問題があるようで、以下にはあやふやな情報が含まれます。マサカリは随時受付中です。
-クエリ言語(Query Language)は、データの問い合わせを行うための言語です。現在、普遍的に使われている SQL もその一種ですね。
-また、最近では[Amazon も PartiQL というクエリ言語を発表したそうです](https://qiita.com/Iwark/items/f9da3d1c08b7e2b6437a)。
-
+クエリ言語(Query Language)は、データの問い合わせを行うための言語です。現在、普遍的に使われている SQL もその一種ですね。最近では[Amazon も PartiQL というクエリ言語を発表したそうです](https://qiita.com/Iwark/items/f9da3d1c08b7e2b6437a)。
 すなわち、今回取り上げる GraphQL もデータの問い合わせを行うための言語です。
-SQL は RDBMS を対象にとってデータの問い合わせを行うことがメインの利用方法でしたが、GraphQL はサーバー-クライアント間通信をより効率的にしてくれるそうです。
+
+GraphQL には、上記のデータ問い合わせを行うクエリ言語とは別に、データの構造を定義するスキーマ言語をもちます。
+スキーマ言語によってデータ構造の型定義を行うことができます。この型定義は Web API の通信時に用いられ、型安全なクライアント-サーバー間通信が可能になるそうです。
 
 ### つまり、何がどう便利になるの？
 
@@ -86,7 +86,7 @@ GET リクエストの場合、上記を圧縮してクエリ文字列に突っ�
 http://myapi/graphql?query={users{id,name}}
 ```
 
-GraphQL クエリをクエリ文字列の query パラメータに入れるわけですね。クエリとクエリと query でごっちゃになりそうです。いや意味するところは同じなんですが。
+GraphQL クエリをクエリ文字列の query パラメータに入れるわけですね。クエリとクエリと query でごっちゃになりそうです。
 
 #### POST リクエストの場合
 
@@ -130,12 +130,182 @@ JSON 形式とは異なる方法として、GraphQL のクエリ形式で送信�
 
 ここからは、実際に GraphQL の仕様について確認していきます。基本的に[公式ページ](https://graphql.org/)の焼きなましです。
 
-### 型について
+### スキーマ言語について
 
-GraphQL には型があります。
+GraphQL には型があります。この型定義を行うことができるのがスキーマ言語です。
+あらゆる GraphQL を介した通信は、このスキーマ言語による型定義を元にしています。
+
+#### スカラー型
+
+スカラー(scalar)とは、物理学において大きさのみを持つ量のことだそうです[(Wikipedia 調べ)](<https://ja.wikipedia.org/wiki/%E3%82%B9%E3%82%AB%E3%83%A9%E3%83%BC_(%E7%89%A9%E7%90%86%E5%AD%A6)>)。
+QraphQL においては、数値や文字などの実データを表す型として用いられるようです。
+
+まず、QraphQL においてデフォルトで定義されている型を紹介します。
+
+- Int: 符号付きの 32 ビット整数
+- Float: 符号付きの倍精度浮動小数点数
+- String: UTF-8 の文字列
+- Boolean: `true`もしくは`false`
+- ID: オブジェクトの再取得やキャッシュのキーとして用いられる、一意な識別子
+  - この型は同様の手段で文字列にシリアル化される
+  - この型をフィールドに与えるということは、そのフィールドは人間が読むためのものではないことを意味する
+
+ID だけちょっと特殊ですが、他の型はよく見る型ですね。
+GraphQL は上記以外にも、ユーザー独自に型を定義することができます。`Date`という型を定義したい場合はこんな感じ。
+
+```graphql
+scalar Date
+```
+
+ただし、独自定義したスカラー型について、ユーザーは必要に応じてその変換処理を記述しなければなりません。上記`Date`型で言うのであれば、年月日までなのか、秒あるいはミリ秒までなのか、フォーマットはどうするかなどについて記述するべきでしょう。
+ただし、このスカラー型の変換については GraphQL のスキーマ定義範囲外です。GraphQL ライブラリによって異なる記述になるので、利用するライブラリのドキュメントを確認してみましょう。たとえば`gqlgen`なら[このページ](https://gqlgen.com/reference/scalars/)です。
+
+#### オブジェクトの型とフィールド
+
+ここでは基本的な型の記述について確認していきましょう。
+GraphQL の型定義は、型名とフィールドからなります。
+
+```graphql
+type Character {
+  name: String!
+  appearsIn: [Episode!]!
+}
+```
+
+上記の例について確認してみましょう。
+
+- `Character`というオブジェクトの型を定義している
+- `name`と`appearsIn`の 2 つのフィールドを持つ
+- `String`は文字列のスカラー型
+  - `String!`と最後に`!`をつけることで、そのフィールドが null にならないことを示す
+- `Episode`はユーザー定義の型
+  - `[Episode]`と`[]`で囲むことにより、配列であることを示す
+  - `!`がついているので、このフィールドは null にならないことを示している
+
+直感的でわかりやすいかと思います。
+簡単なオブジェクトならこれまでの知識で十分記述できそうですね。
+
+#### 引数を持つフィールド
+
+フィールドには引数を定義することができます。以下の例を見てみましょう。
+
+```graphql
+type Starship {
+  id: ID!
+  name: String!
+  length(unit: LengthUnit = METER): Float
+}
+```
+
+`length`フィールドに引数として`LengthUnit`型の`unit`が指定されていますね。
+引数は必須および任意で指定することが可能です。必須としたい場合は、null 不可を示す`!`を引数の型につけましょう。任意とした場合、引数にデフォルト値を指定することも可能です。上記の例はまさしくデフォルト値を指定されていますね。
+上記例だと、`Float`型の長さフィールドに、引数として`LengthUnit`の単位を、デフォルトとして`METER`(メートル)として指定しています。おそらく、スターシップの長さがメートル単位で取得できるのでしょう。
+
+#### Query 型と Mutation 型
+
+スキーマ定義において、Query 型と Mutation 型は特殊な意味を持ちます。この 2 つは API におけるエンドポイントを示すことができるのです。
+
+具体的に見ていきましょう。
+例えば、以下のようなクエリ文を GraphQL サーバーに送り、データが取得できたとします。
+
+```graphql:クエリ文
+query {
+  hero {
+    name
+  }
+  droid(id: "2000") {
+    name
+  }
+}
+```
+
+```json:レスポンスデータ
+{
+  "data": {
+    "hero": {
+      "name": "R2-D2"
+    },
+    "droid": {
+      "name": "C-3PO"
+    }
+  }
+}
+```
+
+リクエストしたクエリ文には、`hero`および`droid`の 2 文が含まれていました。結果もそれぞれ取得できていますね。
+これはすなわち、GraphQL のエンドポイントに`hero`および`droid`が用意されていることを示しています。
+
+GraphQL におけるエンドポイントの定義は、冒頭でも触れたように Query 型もしくは Mutation 型を利用します。
+今回の例で言えば、例えば以下のような型定義が必要です。
+
+```graphql
+type Query {
+  hero(episode: Episode): Character
+  droid(id: ID!): Droid
+}
+```
+
+`Query`型に`hero`フィールドおよび`droid`フィールドが定義されていますね。ちなみに、`hero`では引数が任意となっていますが、`droid`型では必須です。
+このように、Query 型に登録されたフィールドがエンドポイントとして登録されますが、型定義そのものは通常のオブジェクトと変わりません。覚えることが少なくてありがたいですね。
+
+Query 型と Mutation 型の違いについてですが、この 2 つは行える処理が異なります。
+GraphQL において、Query はデータの取得(GET)、Mutation はデータの変更(POST、PUT)を意味します。データの変更を許さず取得のみを可能とする API では、Query 型のみを定義すればいいわけですね。
+
+#### 列挙型
+
+みんな大好き列挙型。あまり説明の必要はないでしょう。
+
+```graphql
+enum Episode {
+  NEWHOPE
+  EMPIRE
+  JEDI
+}
+```
+
+`Episode`型として指定されたフィールドには、`NEWHOPE`、`EMPIRE`、`JEDI`のいずれかしか入らないことを示すことができます。
+
+#### インターフェース
+
+様々なシステムで見られるインターフェースと似通ったものだそうです。
+以下のようなインターフェースがあるとします。
+
+```graphql
+interface Character {
+  id: ID!
+  name: String!
+  friends: [Character]
+  appearsIn: [Episode]!
+}
+```
+
+この`Character`インターフェースを実装する型では、`id`、`name`、`friends`、`appearsIn`の 4 フィールドを実装する必要があります。
+例として、Character インターフェースを実装した`Human`型と`Droid`型を見てみましょう。
+
+```graphql
+type Human implements Character {
+  id: ID!
+  name: String!
+  friends: [Character]
+  appearsIn: [Episode]!
+  starships: [Starship]
+  totalCredits: Int
+}
+
+type Droid implements Character {
+  id: ID!
+  name: String!
+  friends: [Character]
+  appearsIn: [Episode]!
+  primaryFunction: String
+}
+```
+
+Character インターフェースで定義されていたフィールド以外については自由に実装することができます。`Human`型では`starships`と`totalCredits`、`Droid`型では`primaryFunction`が実装されていますね。
 
 ## 参考資料
 
+[「GraphQL」徹底入門 ─ REST との比較、API・フロント双方の実装から学ぶ](https://employment.en-japan.com/engineerhub/entry/2018/12/26/103000)
 [GraphQL のクエリを基礎から整理してみた](https://qiita.com/shunp/items/d85fc47b33e1b3a88167)
 [0 から REST API について調べてみた](https://qiita.com/masato44gm/items/dffb8281536ad321fb08)
 [REST を採用して気づいた「GraphQL って結局何が良いの？」について](https://www.utakata.work/entry/2019/12/02/000000)
