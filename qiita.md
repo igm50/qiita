@@ -14,11 +14,12 @@ GraphQL は、クエリ言語(QL)の一種です。で、クエリ言語って�
 クエリ言語(Query Language)は、データの問い合わせを行うための言語です。現在、普遍的に使われている SQL もその一種ですね。最近では[Amazon も PartiQL というクエリ言語を発表したそうです](https://qiita.com/Iwark/items/f9da3d1c08b7e2b6437a)。
 すなわち、今回取り上げる GraphQL もデータの問い合わせを行うための言語です。
 
-GraphQL には、上記のデータ問い合わせを行うクエリ言語とは別に、データの構造を定義するスキーマ言語をもちます。
-スキーマ言語によってデータ構造の型定義を行うことができます。この型定義は Web API の通信時に用いられ、型安全なクライアント-サーバー間通信が可能になるそうです。
+GraphQL は、クライアント-サーバー間のデータ問い合わせに特化した言語です。
+GraphQL には、データ問い合わせを行うクエリ言語とは別に、データの構造を定義するスキーマ言語をもち、このスキーマ言語によってデータ構造の型定義を行うことができます。定義された型を用いることにより、型安全なデータ通信が可能になります。
 
 ### つまり、何がどう便利になるの？
 
+Web API の運用が簡単になるそうです。
 API というと、[`REST API`](https://qiita.com/masato44gm/items/dffb8281536ad321fb08)が真っ先に浮かぶ人は多いと思います。私もそうです。
 REST API と GraphQL の比較は[こちら](https://www.utakata.work/entry/2019/12/02/000000)でも行われていますが、一応ここでも軽く触れておきましょう。
 
@@ -60,8 +61,25 @@ REST と比較して、GraphQL を使うことによるメリットは以下の�
 - リソースが増えてもエンドポイントは 1 つのまま
 
 デメリットについてはまだよくわかっていないので、ここでは一旦横に置かせていただきます。
+誰だってリクエストを何回も投げるなんてしたくないですし、GraphQL が騒がれる理由もわかってきました。
 
-ここまで調べて、ようやく GraphQL を採用するモチベーションが(なんとなく)わかってきました。誰だってリクエストを何回も投げるなんてしたくないですもんね。
+### GraphQL でできること、できないこと
+
+[GraphQL の仕様書](https://graphql.github.io/graphql-spec/)を一部抜粋すると、こんなことが書かれています。
+
+```txt
+GraphQL is a query language designed to build client applications by providing an intuitive and flexible syntax and system for describing their data requirements and interactions.
+GraphQLは、データ要件と相互作用を記述するための直感的で柔軟な構文とシステムを提供することにより、クライアントアプリケーションを構築するために設計されたクエリ言語です。(Google翻訳)
+```
+
+```txt
+GraphQL is not a programming language capable of arbitrary computation, but is instead a language used to query application servers that have capabilities defined in this specification. GraphQL does not mandate a particular programming language or storage system for application servers that implement it. Instead, application servers take their capabilities and map them to a uniform language, type system, and philosophy that GraphQL encodes. This provides a unified interface friendly to product development and a powerful platform for tool‐building.
+GraphQLは、任意の計算が可能なプログラミング言語ではなく、この仕様で定義されている機能を持つアプリケーションサーバーのクエリに使用される言語です。GraphQLは、それを実装するアプリケーションサーバーに特定のプログラミング言語またはストレージシステムを強制しません。代わりに、アプリケーションサーバーはその機能を利用して、GraphQLがエンコードする統一言語、型システム、および哲学にそれらをマッピングします。これにより、製品開発に適した統合インターフェースと、ツール構築用の強力なプラットフォームが提供されます。(Google翻訳)
+```
+
+GraphQL はあくまで Web API へのデータ問い合わせを行うための言語です。すなわち、Web API を提供するサーバーの実装や、API サーバー-データベース間の処理等に関しては関与しないのです。
+[GraphQL の言語仕様を利用した DB マイグレーションツール](https://www.prisma.io/)などもありますが、それらは例外と見ていいでしょう。
+よって、本記事でもクライアント-サーバー間通信のみを想定した内容となります。
 
 ### GraphQL を用いたリクエスト
 
@@ -423,6 +441,8 @@ union SearchResult = Human | Droid | Starship
   }
 }
 ```
+
+まず、`__typename`は型名を表す文字列ですね。この文字列を
 
 ## 参考資料
 
