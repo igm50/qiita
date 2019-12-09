@@ -302,6 +302,127 @@ type Droid implements Character {
 ```
 
 Character インターフェースで定義されていたフィールド以外については自由に実装することができます。`Human`型では`starships`と`totalCredits`、`Droid`型では`primaryFunction`が実装されていますね。
+同じインターフェースを実装している場合でも、型名が異なれば別個の型です。例として、以下のクエリ文と結果を見てみましょう。
+
+```graphql:クエリ文
+query HeroForEpisode($ep: Episode!) {
+  hero(episode: $ep) {
+    name
+    primaryFunction
+  }
+}
+```
+
+```json:変数
+{
+  "ep": "JEDI"
+}
+```
+
+```json:レスポンスデータ
+{
+  "errors": [
+    {
+      "message": "Cannot query field \"primaryFunction\" on type \"Character\". Did you mean to use an inline fragment on \"Droid\"?",
+      "locations": [
+        {
+          "line": 4,
+          "column": 5
+        }
+      ]
+    }
+  ]
+}
+```
+
+`hero`は Character 型の値を取得するクエリです。すなわち、このクエリ文では`"ep": "JEDI"`に該当する値をもつ Character を取得しようとしているわけです。
+一方で、`primaryFunction`は Droid 型にのみ実装されたフィールドであり、Character 型のすべてに含まれているとは限りません。そのため、エラーが発生しました。
+
+取得できたデータが Droid 型の場合だったとき、一緒に`primaryFunction`の値を取得したい、といったこともあるでしょう。
+その場合、詳細はクエリ文の章で紹介しますが、インラインフラグメントを使えば上手く取得することができます。
+
+```graphql:クエリ文
+query HeroForEpisode($ep: Episode!) {
+  hero(episode: $ep) {
+    name
+    ... on Droid {
+      primaryFunction
+    }
+  }
+}
+```
+
+```json:変数
+{
+  "ep": "JEDI"
+}
+```
+
+```json:レスポンスデータ
+{
+  "data": {
+    "hero": {
+      "name": "R2-D2",
+      "primaryFunction": "Astromech"
+    }
+  }
+}
+```
+
+#### ユニオン型
+
+ユニオン型は TypeScript にもありますね。基本的にはあんな感じです。
+
+```graphql
+union SearchResult = Human | Droid | Starship
+```
+
+上記の場合、`SearchResult`として`Human`、`Droid`、`Starship`の 3 つを指定しています。これは`SearchResult`型を指定したフィールド等では、その実装として`Human`、`Droid`、`Starship`のいずれかが入ることを意味します。
+例えば、SearchResult 型の結果を返す`search`クエリが存在する場合に、以下のような処理が行えます。
+
+```graphql:クエリ文
+{
+  search(text: "an") {
+    __typename
+    ... on Human {
+      name
+      height
+    }
+    ... on Droid {
+      name
+      primaryFunction
+    }
+    ... on Starship {
+      name
+      length
+    }
+  }
+}
+```
+
+```json:レスポンスデータ
+{
+  "data": {
+    "search": [
+      {
+        "__typename": "Human",
+        "name": "Han Solo",
+        "height": 1.8
+      },
+      {
+        "__typename": "Human",
+        "name": "Leia Organa",
+        "height": 1.5
+      },
+      {
+        "__typename": "Starship",
+        "name": "TIE Advanced x1",
+        "length": 9.2
+      }
+    ]
+  }
+}
+```
 
 ## 参考資料
 
