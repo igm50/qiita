@@ -442,7 +442,79 @@ union SearchResult = Human | Droid | Starship
 }
 ```
 
-まず、`__typename`は型名を表す文字列ですね。この文字列を
+まず、`__typename`は型名を表す文字列ですね。クライアントはこの文字列をもとに、取得できたデータの型を判断できます。
+次は`...on XXX`。先ほども出てきたインラインフラグメントですね。見ればそのままだと思いますが、型に応じて取得するフィールドを選択しています。
+ちなみに、Human 型と Droid 型はどちらも Character 型を実装しているため、以下のように書くことも可能です。
+
+```graphql
+{
+  search(text: "an") {
+    __typename
+    ... on Character {
+      name
+    }
+    ... on Human {
+      height
+    }
+    ... on Droid {
+      primaryFunction
+    }
+    ... on Starship {
+      name
+      length
+    }
+  }
+}
+```
+
+#### 入力型
+
+入力型は、クエリの引数として用いられるフィールドの組み合わせを定義したものです。
+例えば、`ReviewInput`型を以下のように定義します。
+
+```graphql
+input ReviewInput {
+  stars: Int!
+  commentary: String
+}
+```
+
+`type`ではなく`input`を使っているのがミソです。
+このとき、ReviewInput 型を用いる`CreateReviewForEpisode`クエリが存在する場合、以下のような処理が行えます。
+
+```graphql:クエリ文
+mutation CreateReviewForEpisode($ep: Episode!, $review: ReviewInput!) {
+  createReview(episode: $ep, review: $review) {
+    stars
+    commentary
+  }
+}
+```
+
+```json:変数
+{
+  "ep": "JEDI",
+  "review": {
+    "stars": 5,
+    "commentary": "This is a great movie!"
+  }
+}
+```
+
+```json:レスポンスデータ
+{
+  "data": {
+    "createReview": {
+      "stars": 5,
+      "commentary": "This is a great movie!"
+    }
+  }
+}
+```
+
+実装を確認してはいませんが、これはエピソードごとの感想を登録するためのクエリだと推測することができると思います。すなわち、ReviewInput 型は感想を登録するために必要な情報を示している、と捉えることもできますね。
+このように、「ある操作を行うために必要な情報」について、入力型という形式で表現することができるわけです。
+ただし、入力型は通常の型と違い、フィールドに引数を設定することはできないので注意しましょう。
 
 ## 参考資料
 
