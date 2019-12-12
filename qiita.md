@@ -669,6 +669,198 @@ human に与える引数は取得するデータの選択、すなわち SQL で
 }
 ```
 
+上記の場合、通常はどちらも`hero`フィールドとなってしまいますが、エイリアスによってこれを回避しています。
+
+#### フラグメント
+
+フラグメントは、フィールド取得構成を使いまわすことのできる機能です。スキーマ言語の章でも、インラインフラグメントが出てきましたね。
+というわけで、以下の例を見てください。
+
+```graphql:クエリ文
+{
+  leftComparison: hero(episode: EMPIRE) {
+    ...comparisonFields
+  }
+  rightComparison: hero(episode: JEDI) {
+    ...comparisonFields
+  }
+}
+​
+fragment comparisonFields on Character {
+  name
+  appearsIn
+  friends {
+    name
+  }
+}
+```
+
+```json:レスポンスデータ
+{
+  "data": {
+    "leftComparison": {
+      "name": "Luke Skywalker",
+      "appearsIn": ["NEWHOPE", "EMPIRE", "JEDI"],
+      "friends": [
+        {
+          "name": "Han Solo"
+        },
+        {
+          "name": "Leia Organa"
+        },
+        {
+          "name": "C-3PO"
+        },
+        {
+          "name": "R2-D2"
+        }
+      ]
+    },
+    "rightComparison": {
+      "name": "R2-D2",
+      "appearsIn": ["NEWHOPE", "EMPIRE", "JEDI"],
+      "friends": [
+        {
+          "name": "Luke Skywalker"
+        },
+        {
+          "name": "Han Solo"
+        },
+        {
+          "name": "Leia Organa"
+        }
+      ]
+    }
+  }
+}
+```
+
+それぞれのフィールドとして`..comparisonFields`を指定しています。これは、取得するフィールドの指定を`comparisonFields`フラグメントに委譲しています。
+また、`fragment comparisonFields on Character`は、取得できたデータ型が Character 型だった場合に取得するフィールドの指定を行っています。
+hero では Character 型が取得できるので、どちらもデータを取得できているわけですね。
+
+なお、フラグメントには引数が利用できます。
+
+```graphql:クエリ文
+query HeroComparison($first: Int = 3) {
+  leftComparison: hero(episode: EMPIRE) {
+    ...comparisonFields
+  }
+  rightComparison: hero(episode: JEDI) {
+    ...comparisonFields
+  }
+}
+
+fragment comparisonFields on Character {
+  name
+  friendsConnection(first: $first) {
+    totalCount
+    edges {
+      node {
+        name
+      }
+    }
+  }
+}
+```
+
+```json:レスポンスデータ
+{
+  "data": {
+    "leftComparison": {
+      "name": "Luke Skywalker",
+      "friendsConnection": {
+        "totalCount": 4,
+        "edges": [
+          {
+            "node": {
+              "name": "Han Solo"
+            }
+          },
+          {
+            "node": {
+              "name": "Leia Organa"
+            }
+          },
+          {
+            "node": {
+              "name": "C-3PO"
+            }
+          }
+        ]
+      }
+    },
+    "rightComparison": {
+      "name": "R2-D2",
+      "friendsConnection": {
+        "totalCount": 3,
+        "edges": [
+          {
+            "node": {
+              "name": "Luke Skywalker"
+            }
+          },
+          {
+            "node": {
+              "name": "Han Solo"
+            }
+          },
+          {
+            "node": {
+              "name": "Leia Organa"
+            }
+          }
+        ]
+      }
+    }
+  }
+}
+```
+
+`Luke Skywalker`は友人(機?)が 4 人いるようですが、3 人までしか表示されていません。`$first`がデフォルトでは 3 だからですね。
+一方、R2-D2 は 3 人しか友人がいないのでピッタリ表示されています。~~C-3PO は友達じゃないようですね。~~
+
+#### 操作名
+
+操作名は、発行するクエリに任意に指定することができる名称です。クエリ発行ごとに毎回指定できます。
+これまで例として記述されたクエリ文は、クエリ操作(`query`、`mutation`等)と操作名の指定を省略した記法になります。操作名を指定する場合、クエリ操作についても明記が必要です。
+以下に例を示します。
+
+```graphql:クエリ文
+query HeroNameAndFriends {
+  hero {
+    name
+    friends {
+      name
+    }
+  }
+}
+```
+
+```json:レスポンスデータ
+{
+  "data": {
+    "hero": {
+      "name": "R2-D2",
+      "friends": [
+        {
+          "name": "Luke Skywalker"
+        },
+        {
+          "name": "Han Solo"
+        },
+        {
+          "name": "Leia Organa"
+        }
+      ]
+    }
+  }
+}
+```
+
+省略記法を用いる場合、操作名は不要になります。不要な操作名をあえて明記する理由は、サーバーのログ記録です。
+クエリを発行する際に操作名を記述し、GraphQL サーバーで記録することにより、不具合や問い合わせなどの際にログを追いかけることが容易になるのです。
+
 ## 参考資料
 
 [「GraphQL」徹底入門 ─ REST との比較、API・フロント双方の実装から学ぶ](https://employment.en-japan.com/engineerhub/entry/2018/12/26/103000)
