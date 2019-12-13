@@ -861,6 +861,70 @@ query HeroNameAndFriends {
 省略記法を用いる場合、操作名は不要になります。不要な操作名をあえて明記する理由は、サーバーのログ記録です。
 クエリを発行する際に操作名を記述し、GraphQL サーバーで記録することにより、不具合や問い合わせなどの際にログを追いかけることが容易になるのです。
 
+#### 変数
+
+GraphQL では、クエリ文と同時に変数の指定も送信することができます。定型の処理であれば、変数の値だけ変更してあげれば済みますね。
+例としては以下の通り。
+
+```graphql:クエリ文
+query HeroNameAndFriends($episode: Episode) {
+  hero(episode: $episode) {
+    name
+    friends {
+      name
+    }
+  }
+}
+```
+
+```json:変数
+{
+  "episode": "JEDI"
+}
+```
+
+```json:レスポンスデータ
+{
+  "data": {
+    "hero": {
+      "name": "R2-D2",
+      "friends": [
+        {
+          "name": "Luke Skywalker"
+        },
+        {
+          "name": "Han Solo"
+        },
+        {
+          "name": "Leia Organa"
+        }
+      ]
+    }
+  }
+}
+```
+
+クエリ文には、Episode 型を指定できる`$episode`変数が引数として存在します。変数定義では、この episode に`JEDI`を代入していますね。
+変数の指定は基本的に JSON で行います。よって、複数の変数も代入することが可能です。
+
+変数は、スカラー型、列挙型、入力型のいずれかでなければなりません。よって、複雑なオブジェクトを変数として指定したい場合は、入力型を利用する必要があります。
+また、既に何度か例示されていますが、初期値を設定することも可能です。例えば上記の例で初期値を`JEDI`にしたい場合は以下の通り。
+
+```graphql
+query HeroNameAndFriends($episode: Episode = JEDI) {
+  hero(episode: $episode) {
+    name
+    friends {
+      name
+    }
+  }
+}
+```
+
+#### ディレクティブ
+
+ディレクティブ(Directives)とは、指令や命令といった意味があるそうです。
+
 ## 参考資料
 
 [「GraphQL」徹底入門 ─ REST との比較、API・フロント双方の実装から学ぶ](https://employment.en-japan.com/engineerhub/entry/2018/12/26/103000)
