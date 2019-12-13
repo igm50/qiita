@@ -924,6 +924,44 @@ query HeroNameAndFriends($episode: Episode = JEDI) {
 #### ディレクティブ
 
 ディレクティブ(Directives)とは、指令や命令といった意味があるそうです。
+ディレクティブを使うことで、取得するデータの構造を動的に変化させることができます。動的なデータ構造変化としてはフラグメントも該当すると思いますが、こちらは変数を与えることで動作します。
+
+```graphql:クエリ文
+query Hero($episode: Episode, $withFriends: Boolean!) {
+  hero(episode: $episode) {
+    name
+    friends @include(if: $withFriends) {
+      name
+    }
+  }
+}
+```
+
+```json:変数
+{
+  "episode": "JEDI",
+  "withFriends": false
+}
+```
+
+```json:レスポンスデータ
+{
+  "data": {
+    "hero": {
+      "name": "R2-D2"
+    }
+  }
+}
+```
+
+`@include`ディレクティブにより、friends フィールドを含むかどうか選択しています。今回は false を引数に与えたため、friends フィールドを除く結果となりました。
+
+GraphQL には、上記の`@include`、および逆の操作を行える`@skip`の 2 種類のみが定義されています。
+このディレクティブはライブラリやユーザー定義などで追加されることを想定した機能のようです。例えば、[Apollo では@key や@provides 等のディレクティブが定義されています](https://www.apollographql.com/docs/apollo-server/federation/federation-spec/#schema-modifications-glossary)。
+
+#### Mutations
+
+`Mutation`は、
 
 ## 参考資料
 
