@@ -1,0 +1,16 @@
+@startuml
+
+entity "飼い主" as owners {
+  + id
+  ===
+}
+
+entity "ペット" as pets {
+  + id
+  ===
+  - owner_id
+}
+
+owners ||-right-o{ pets
+
+@enduml
