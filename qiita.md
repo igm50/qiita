@@ -1,9 +1,9 @@
-# GraphQL ってどうやって使えばいいんだってばよ
+# はじめに
 
-前回の記事で開発環境が構築できたので、やれ開発だーと意気込んでいたところ、DB 設計で出鼻をくじかれました。
-通常の SQL と RDBMS を使った構築ならある程度勝手がわかるのですが、QraphQL が間に挟まるとどうなるか想像もつきません。
+前回の記事で GraphQL を使った開発環境が構築できたので、やれ開発だーと意気込んでいたところ、GraphQL のスキーマ定義で出鼻をくじかれました。
+Prisma、DB マイグレーションツールって点だけ見てましたけど、GraphQL の知識は必須ですよねそりゃ……
 
-というわけで、まずは GraphQL についてまとめることにしました。
+というわけで、まずは GraphQL についての勉強と備忘録を兼ねて入門記事を書こうと思います。
 本記事の目標は、GraphQL を[完全に理解した](https://mohritaroh.hateblo.jp/entry/2019/08/18/164000)と言えるようになることです。
 
 ## そもそも GraphQL って？
@@ -357,7 +357,7 @@ query HeroForEpisode($ep: Episode!) {
 一方で、`primaryFunction`は Droid 型にのみ実装されたフィールドであり、Character 型のすべてに含まれているとは限りません。そのため、エラーが発生しました。
 
 取得できたデータが Droid 型の場合だったとき、一緒に`primaryFunction`の値を取得したい、といったこともあるでしょう。
-その場合、詳細はクエリ文の章で紹介しますが、インラインフラグメントを使えば上手く取得することができます。
+その場合、インラインフラグメントを使えば上手く取得することができます。
 
 ```graphql:クエリ文
 query HeroForEpisode($ep: Episode!) {
@@ -961,10 +961,56 @@ GraphQL には、上記の`@include`、および逆の操作を行える`@skip`�
 
 #### Mutations
 
-`Mutation`は、
+REST では、GET リクエストではデータの取得のみを行います。データの変更を行うには POST や PUT などのリクエストメソッドを使い、明示的に示すべきとされています。
+QraphQL でもこの考え方を踏襲しています。データの変更を伴わない操作には`Query`を、データの変更を伴う操作には`Mutation`を利用するべきです。
+
+以下は Mutation を明示的に示したクエリ文の例です。
+
+```graphql:クエリ文
+mutation CreateReviewForEpisode($ep: Episode!, $review: ReviewInput!) {
+  createReview(episode: $ep, review: $review) {
+    stars
+    commentary
+  }
+}
+```
+
+```json:変数
+{
+  "ep": "JEDI",
+  "review": {
+    "stars": 5,
+    "commentary": "This is a great movie!"
+  }
+}
+```
+
+```json:レスポンスデータ
+{
+  "data": {
+    "createReview": {
+      "stars": 5,
+      "commentary": "This is a great movie!"
+    }
+  }
+}
+```
+
+レビューを新規作成するクエリ文です。`mutation CreateReviewForEpisode`と、これがデータ変更を行うことを示していますね。もちろんこの操作名はログとして保存されるべきです。
+まだライブラリの実装は確認していませんが、実装をチョチョイとすれば Query でデータ変更を行うことも可能でしょう。ですが、REST におけるリクエストメソッドと同様に、規格に合わせることでよりわかりやすくバグの混入しにくいアプリケーションとすることが大事なのだと思います。
+
+ちなみに、変数として定義できるオブジェクトは入力型のみなので、ここで用いられている`ReviewInput`型は入力型です。
+
+Query と同様に Mutation も一度のクエリ文に複数仕込むことが可能です。その場合、上から順番に連続して実行されるようです。
+
+## 終わりに
+
+以上でこの記事は終わりです。GraphQLを完全に理解できましたか？ 私はできていません。
+やはり細かいところは自分で作ってみなければ理解できないように感じます。幸い、各言語でライブラリが用意されているようなので、いろいろ試してみたいと思います。
 
 ## 参考資料
 
+[GraphQL](https://graphql.org/)
 [「GraphQL」徹底入門 ─ REST との比較、API・フロント双方の実装から学ぶ](https://employment.en-japan.com/engineerhub/entry/2018/12/26/103000)
 [GraphQL のクエリを基礎から整理してみた](https://qiita.com/shunp/items/d85fc47b33e1b3a88167)
 [0 から REST API について調べてみた](https://qiita.com/masato44gm/items/dffb8281536ad321fb08)
@@ -973,4 +1019,3 @@ GraphQL には、上記の`@include`、および逆の操作を行える`@skip`�
 [GraphQL 入門 - 使いたくなる GraphQL](https://qiita.com/bananaumai/items/3eb77a67102f53e8a1ad)
 [GraphQL を最速でマスターするための意識改革３ヶ条](https://qiita.com/jabba/items/8d77ab86641937847673)
 [Amazon が SQL++となる新しいクエリ言語、PartiQL をオープンソースで発表](https://qiita.com/Iwark/items/f9da3d1c08b7e2b6437a)
-[GraphQL](https://graphql.org/)
