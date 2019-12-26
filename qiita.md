@@ -17,9 +17,10 @@
 
 ### 三行まとめ
 
-- GraphQL を基幹技術とした、JavaScript のツール群
-- REST サーバーや DB サーバーなどの I/O を一本化した GraphQL サーバーを構築できる(Apollo Server)
-- GraphQL サーバーを利用するクライアントアプリを簡単に作成できる(Apollo Client)
+- GraphQL を基幹技術としたプラットフォーム
+- DB、REST API などのデータソースを一本化した GraphQL サーバーを構築でき、それを利用するクライアントアプリが作成できる
+
+### そもそも
 
 ## Apollo Server を使ってみる
 
@@ -75,12 +76,32 @@ server.listen().then(({ url }) => {
 });
 ```
 
-node で起動してみましょう。デフォルトで 4000 番ポートを利用するので、URL は`http://localhost:4000/`になるかと思います。
+node で起動してみましょう。デフォルトで 4000 番ポートを利用するので、URL は`http://localhost:4000/`になるかと思います。この URL にクエリを投げる、あるいはブラウザで直接アクセスできれば OK です。
 
-チュートリアルそのままのコードですが、これだけでいろんなことがわかります。
-スキーマ定義もクエリ処理も JavaScript オンリーでできるのは強力ですね。ある程度慣れた人なら爆速で GraphQL サーバーが構築できそうです。
-本コードのように、REST サーバーや DB を用意しなくても適当な値を返すことが可能です。
-バックエンドの複雑性(REST、GraphQL、DB 等との接続)を Apollo Server で吸収し、一本化できることも大きな強みですね。
+チュートリアルそのままのコードですが、これってものすごいコードだと思いませんか?
+上記から大事な部分だけを取り出してみると、これっぽっちしかありません。
+
+```javascript
+const { ApolloServer, gql } = require("apollo-server");
+
+const typeDefs = gql`{スキーマ定義}`;
+
+const resolvers = {
+  Query: {
+    // クエリに応じた関数の登録
+  }
+};
+
+// サーバーを起動
+const server = new ApolloServer({ typeDefs, resolvers });
+server.listen().then(({ url }) => {
+  // 起動時処理
+});
+```
+
+これだけで GraphQL サーバーが立ち上がるんです。
+しかも、クエリに登録する関数は返り値の型さえ守っていれば OK なわけです。定数を返しても裏で REST を叩いても DB 接続してもお構いなし。開発者の自由です。
+本来ライブラリやフレームワークとはそういうものですが、必要十分なスマートさが美しく感じるのは私だけでしょうか。
 
 ## Apollo Client を使ってみる
 
