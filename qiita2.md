@@ -11,7 +11,7 @@ AWS でも EKS としてサポートしているなど、大規模サービス�
 というわけで、本記事では Docker しか知らない人のために、少しずつ k8s を理解できる記事を目指そうと思います。
 ※本記事では rkt については触れません。
 
-## 3 行でわかる本記事の目的
+## 3 行でわかる本記事の趣旨
 
 - Docker しか知らない人でも k8s の概念を理解できるようになる
 - コンテナという概念から少しずつ広げていき、最終的に k8s 全体を見渡せるようになる
@@ -31,3 +31,40 @@ Pod には 1 つ以上のコンテナと任意の数の共有ボリュームを�
 Pod は基本的に使い捨てです。Pod に含まれるアプリケーションをスケールしたい場合、Pod を複数生成することで対応できます。k8s において、この Pod 複製処理はレプリケーションと呼ばれているそうです。
 
 Pod はそれぞれ固有の IP アドレスを持ちます。すなわち、同一 Pod に複数コンテナが存在する場合、それらのコンテナは外見上同じ IP アドレスになります。
+
+## ノード
+
+![ノード図](https://d33wubrfki0l68.cloudfront.net/5cb72d407cbe2755e581b6de757e0d81760d5b86/a9df9/docs/tutorials/kubernetes-basics/public/images/module_03_nodes.svg)
+
+[ノード](https://kubernetes.io/ja/docs/concepts/architecture/nodes/)は k8s におけるワーカーマシンです。いまいちピンと来ない人(私を含む)は、仮想的もしくは物理的なマシンをイメージしてください。
+ノードには以下のものが含まれます。
+
+- Pod
+- コンテナランタイム
+  - Docker、rkt などのこと
+- [kubelet](https://kubernetes.io/docs/reference/command-line-tools-reference/kubelet/)
+  - k8s マスターとノード間の通信、ノード上の Pod 管理などを行う、ノードの心臓部
+- [kube-proxy](https://kubernetes.io/docs/reference/command-line-tools-reference/kube-proxy/)
+  - 各ノードにおいて、TCP、UDP、SCTP 通信を取り持つネットワークプロキシ
+
+## クラスターとマスター
+
+![クラスター図](https://d33wubrfki0l68.cloudfront.net/99d9808dcbf2880a996ed50d308a186b5900cec9/40b94/docs/tutorials/kubernetes-basics/public/images/module_01_cluster.svg)
+
+k8s のアーキテクチャにおいて、クラスターはあるサービスにおける k8s ネットワーク全体のことを指します。
+クラスターには必ず単一のマスターが含まれます。マスターはノードの一種ですが、通常のノードに加えて以下の要素を持ちます。
+
+- API サーバー
+  - クラスター内外間通信およびクラスター内部通信を制御する
+- etcd
+  - クラスター内における持続的な値を保持する分散キーバリューストア
+- [コントローラマネージャー](https://kubernetes.io/docs/reference/command-line-tools-reference/kube-controller-manager/)
+  - クラスター内部の状態(ノード、Pod の数など)を管理する制御ループ群
+- スケジューラー
+  - Pod の状態を監視し、次に Pod をホストするノードを選択する
+
+## 参考資料
+
+[Kubernetes](https://kubernetes.io/ja/)
+[イラストで学ぶ Kubernetes](https://qiita.com/baby-degu/items/ea95be49d1298b1c6a1b)
+[Kubernetes: 構成コンポーネント一覧](https://qiita.com/tkusumi/items/c2a92cd52bfdb9edd613)
