@@ -51,7 +51,7 @@ Pod はそれぞれ固有の IP アドレスを持ちます。すなわち、同
 
 ![クラスター図](https://d33wubrfki0l68.cloudfront.net/99d9808dcbf2880a996ed50d308a186b5900cec9/40b94/docs/tutorials/kubernetes-basics/public/images/module_01_cluster.svg)
 
-k8s のアーキテクチャにおいて、クラスターはあるサービスにおける k8s ネットワーク全体のことを指します。
+k8s のアーキテクチャにおいて、クラスターはサービスにおける k8s ネットワーク全体のことを指します。
 クラスターには必ず単一のマスターが含まれます。マスターはノードの一種ですが、通常のノードに加えて以下の要素を持ちます。
 
 - API サーバー
@@ -63,8 +63,73 @@ k8s のアーキテクチャにおいて、クラスターはあるサービス�
 - スケジューラー
   - Pod の状態を監視し、次に Pod をホストするノードを選択する
 
+以下では、代表的なコントローラについて見ていきます。
+
+### レプリカセット
+
+[レプリカセット](https://kubernetes.io/ja/docs/concepts/workloads/controllers/replicaset/)は、Pod を管理するコントローラです。主に Pod の作成と削除を行います。例えば、設定した Pod 数に対し不足していれば作成を、過剰であれば削除を行います。
+Pod の作成は、基本的には Pod テンプレートをもとに行われます。この Pod テンプレートはレプリカセットの設定に含まれます。そのため、複数の Pod テンプレートを管理したい場合は、複数のレプリカセットが必要になるでしょう。
+以下はレプリカセットの設定例です([公式 Docs](https://kubernetes.io/ja/docs/concepts/workloads/controllers/replicaset/#replicaset%e3%81%ae%e4%bd%bf%e7%94%a8%e4%be%8b)引用)。
+
+```yaml
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: frontend
+  labels:
+    app: guestbook
+    tier: frontend
+spec:
+  # modify replicas according to your case
+  replicas: 3
+  selector:
+    matchLabels:
+      tier: frontend
+    matchExpressions:
+      - { key: tier, operator: In, values: [frontend] }
+  template:
+    metadata:
+      labels:
+        app: guestbook
+        tier: frontend
+    spec:
+      containers:
+        - name: php-redis
+          image: gcr.io/google_samples/gb-frontend:v3
+          resources:
+            requests:
+              cpu: 100m
+              memory: 100Mi
+          env:
+            - name: GET_HOSTS_FROM
+              value: dns
+              # If your cluster config does not include a dns service, then to
+              # instead access environment variables to find service host
+              # info, comment out the 'value: dns' line above, and uncomment the
+              # line below.
+              # value: env
+          ports:
+            - containerPort: 80
+```
+
+レプリカセットと Pod には所有関係があります。
+レプリカセットにはセレクターという設定値があり、このセレクターと Pod のラベル情報が一致する場合、レプリカセットはその Pod を所有することが可能になります。
+Pod がレプリカセットに所有されている場合、`metadata.ownerReferences`フィールドにその Pod を所有するレプリカセットに関する情報が書き込まれます。よって、`ownerReferences`フィールドが空、もしくは不正だった場合、所有者のいない Pod ということになります。
+所有者がいない Pod は、即座にその Pod を所有できるレプリカセットに所有されます。
+レプリカセットが削除されるとき、デフォルトではレプリカセットの所有する Pod 群は削除されます。
+
+この通り、Pod を管理することができるレプリカセットですが、**直接レプリカセットを利用することは非推奨です**。代わりに、より上位のコントローラであるデプロイメントが利用されます。
+
+### デプロイメント
+
+[デプロイメント](https://kubernetes.io/ja/docs/concepts/workloads/controllers/deployment/)はレプリカセットと Pod を管理するコントローラです。
+
 ## 参考資料
 
 [Kubernetes](https://kubernetes.io/ja/)
+[Play with Kubernetes](https://labs.play-with-k8s.com/)
 [イラストで学ぶ Kubernetes](https://qiita.com/baby-degu/items/ea95be49d1298b1c6a1b)
 [Kubernetes: 構成コンポーネント一覧](https://qiita.com/tkusumi/items/c2a92cd52bfdb9edd613)
+[Raspberry Pi でおうち Kubernetes 構築【論理編】](https://qiita.com/go_vargo/items/29f6d832ea0a289b4778)
+[ブラウザ上で無料で試せる kubernetes 環境一覧](https://qiita.com/loftkun/items/7804f19c4a34f56744f6)
+[Kubernetes お試しコマンドまとめ](https://qiita.com/tnagano1981/items/27f32dd3350217b94feb)
