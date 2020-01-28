@@ -12,7 +12,7 @@ AWS でも EKS としてサポートしているなど、大規模サービス�
 
 ## 3 行でわかる本記事の趣旨
 
-- コンテナという概念から少しずつ広げていき、最終的に Kubernetes 全体を見渡せるようになる
+- コンテナという概念から少しずつ広げていき、最終的に Kubernetes 全体の雰囲気をつかめるようになる
 - Docker しか知らない人でも Kubernetes 特有の概念(Pod、レプリカセットなど)を理解できるようになる
 - Kubernetes を通じたサービスの展開について理解できるようになる
 
@@ -205,6 +205,65 @@ IP アドレスの変動するバックエンドに対し安定的な通信経�
 
 上記 4 タイプのいずれであっても、`External IPs`を設定できます。
 External IPs に設定されている場合、当該 IP からのリクエストは遮断されません。この External IPs は k8s によって管理されないため、クラスター管理者が責任を持って管理する必要があります。
+
+## イングレス
+
+[イングレス](https://kubernetes.io/ja/docs/concepts/services-networking/ingress/)はクラスター内のサービスへのアクセスを管理する API オブジェクトです。~~ポケモン GO の元となったゲームのことではありません。~~
+イングレスを利用することで、各サービスのエンドポイントを URL にマッピングすることができます。
+
+以下に単一サービス、および複数サービスの例を示します([引用](https://kubernetes.io/ja/docs/concepts/services-networking/ingress/#ingress%e3%81%ae%e3%82%bf%e3%82%a4%e3%83%97))。
+
+```yaml
+piVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: test-ingress
+spec:
+  backend:
+    serviceName: testsvc
+    servicePort: 80
+```
+
+```yaml
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: simple-fanout-example
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+    - host: foo.bar.com
+      http:
+        paths:
+          - path: /foo
+            backend:
+              serviceName: service1
+              servicePort: 4200
+          - path: /bar
+            backend:
+              serviceName: service2
+              servicePort: 8080
+```
+
+イングレスを利用することで、ClusterIP タイプのサービスを外部に公開することができます。
+イングレスを利用せずにサービスを公開したい場合は、NordPort タイプもしくは LoadBalancer タイプのサービスを作成しましょう。
+
+## おわりに
+
+本記事で紹介した機能は k8s のほんの一部にすぎません。
+しっかり理解したければ、やっぱり自分で触ってみるのが一番かと思います。
+
+以下はブラウザ上で k8s を試すことができるページです。
+
+[Kubernetes チュートリアル](https://kubernetes.io/ja/docs/tutorials/hello-minikube/)
+[Play with Kubernetes](https://labs.play-with-k8s.com/)
+
+お金に余裕がある人は一家に一台 Kubernetes を用意してもいいかもしれません。
+
+[Raspberry Pi でおうち Kubernetes 構築【論理編】](https://qiita.com/go_vargo/items/29f6d832ea0a289b4778)
+
+私も本記事を書いてようやく k8s の雰囲気がつかめたので、何か簡単なものを作って試してみようと思います。
 
 ## 参考資料
 
