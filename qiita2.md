@@ -179,9 +179,32 @@ k8s のデフォルト設定では、デプロイメントのリビジョンに�
 Pod はそれぞれ単一の IP アドレスを持ちます。
 例えば、リソースへのアクセス手段を提供する Pod(以下バックエンド)が存在し、その Pod に対してクライアントのブラウザで稼働するアプリケーション(以下フロントエンド)がリクエストを送信したいとします。
 このとき、フロントエンドはバックエンドへの通信経路を確立しなければなりません。一方で、バックエンドたる Pod は永続性が保証されているとは限りません。すなわち、IP アドレスが変動する可能性があります。
+
 IP アドレスの変動するバックエンドに対し安定的な通信経路を提供する手法は数多くあると思いますが、k8s ではサービスという方法が提供されています。
 
-![サービス図](https://d33wubrfki0l68.cloudfront.net/30f75140a581110443397192d70a4cdb37df7bfc/b5f56/docs/tutorials/kubernetes-basics/public/images/module_05_scaling2.svg)
+![サービス図](https://d33wubrfki0l68.cloudfront.net/b964c59cdc1979dd4e1904c25f43745564ef6bee/f3351/docs/tutorials/kubernetes-basics/public/images/module_04_labels.svg)
+
+[サービス](https://kubernetes.io/ja/docs/concepts/services-networking/service/)は複数の Pod を束ね、単一のエンドポイントを提供することができる機能です。
+レプリカセットやデプロイメント等では、それぞれが持つセレクターと Pod の持つラベル情報から管理対象の Pod を判断していました。
+サービスについても同様にセレクターを持ち、ターゲットとなる Pod をラベル情報から読み取ることができます。サービスは継続的にクラスター内をスキャンし、ターゲットの Pod セットを監視します。変更があった場合は、エンドポイント情報に変更を反映させます。
+
+サービスの公開方法について、以下の 4 種類に分類されます。
+
+- ClusterIP: クラスター内部にのみサービスを公開する
+  - デフォルト設定ではコレ
+- NodePort: クラスターに所属するノードそれぞれが、外部に対してサービスを公開する
+  - 全てのノードで同じポート番号で公開される
+  - 30000-32767 のいずれかのポート番号となる(指定可能)
+  - このタイプでサービスを公開するとき、自動的に ClusterIP タイプのサービスも作成される
+- LoadBalancer: クラウドプロバイダーのロードバランサーを利用して外部に公開する
+  - AWS や GCP など、それぞれのクラウドプロバイダーで提供されているロードバランサーを利用する
+  - このタイプでサービスを公開するとき、自動的に NordPort および ClusterIP タイプのサービスも作成される
+- ExternalName: サービスを DNS 名とマッピングする
+  - クラスター内部で別のサービスを DNS 名とマッピングし、アクセスできるようにする
+  - 別のサービスをマッピングするため、セレクターは設定しなくてもいい(Pod が無くてもいい)
+
+上記 4 タイプのいずれであっても、`External IPs`を設定できます。
+External IPs に設定されている場合、当該 IP からのリクエストは遮断されません。この External IPs は k8s によって管理されないため、クラスター管理者が責任を持って管理する必要があります。
 
 ## 参考資料
 
@@ -192,3 +215,4 @@ IP アドレスの変動するバックエンドに対し安定的な通信経�
 [Raspberry Pi でおうち Kubernetes 構築【論理編】](https://qiita.com/go_vargo/items/29f6d832ea0a289b4778)
 [ブラウザ上で無料で試せる kubernetes 環境一覧](https://qiita.com/loftkun/items/7804f19c4a34f56744f6)
 [Kubernetes お試しコマンドまとめ](https://qiita.com/tnagano1981/items/27f32dd3350217b94feb)
+[Kubernetes の Service で ExternalName Service と Non-Selector Service を試す](https://qiita.com/toshihirock/items/7b292218ce82427a40db)
