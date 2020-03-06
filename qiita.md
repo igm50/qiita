@@ -32,8 +32,14 @@ EXPOSE 8000
 ## わかりにくかった Rust の文法
 
 ここでは、私が理解する(知る)までに時間がかかった文法やコツをまとめていきます。
+結論としては[TRPL](https://doc.rust-jp.rs/book/second-edition/)読め！ ですね。
 
 ### サイズ不明な構造体は Box に格納する
+
+[TRPL のこのページ](https://doc.rust-jp.rs/book/second-edition/ch15-01-box.html)に書かれている内容です。
+
+Rust では一部の文脈において、対象のサイズをコンパイル時に特定できている必要があります。
+具体的に言うと、以下の記述は怒られます。
 
 ### ?演算子
 
