@@ -1,11 +1,16 @@
 # はじめに
 
 Rust が旬らしいので、試しに簡単な GraphQL サーバーを建ててみました。
+基本的な機能はライブラリに頼りましたが、Rust の文法を一通り確認するにはちょうどいいように感じました。
+
+最終的なコードは[こちら](https://github.com/igm50/rust-graphql-sample)。
 
 ## 開発環境構築
 
 ローカル死んでも汚したくないマンなので、Docker を使います。ちなみに筆者は MacBook Pro をそのまま使用しています。
-普通にローカルのディレクトリをマウントするとビルドが死ぬほど遅くなります。Rust のビルドディレクトリは、デフォルト設定だとルートディレクトリ直下に置かれます。[噂によると](https://qiita.com/yuki_ycino/items/cb21cf91a39ddd61f484)Docker for Mac の場合、マウントしたファイルの同期がかなり遅いとかなんとか。
+普通にローカルのディレクトリをマウントすると、ビルドが死ぬほど遅くなります。ビルド時のファイル同期処理がボトルネックになっているようです。
+Rust のビルドディレクトリは、デフォルト設定だとルートディレクトリ直下に置かれます。[噂によると](https://qiita.com/yuki_ycino/items/cb21cf91a39ddd61f484)Docker for Mac の場合、マウントしたファイルの同期がかなり遅いとかなんとか。
+
 というわけで、[こちらの記事](https://qiita.com/yagince/items/077d209ecca644398ea3)を参考に Dockerfile を作成しましょう。
 
 ```dockerfile
@@ -32,7 +37,7 @@ EXPOSE 8000
 ## わかりにくかった Rust の文法
 
 ここでは、私が理解する(知る)までに時間がかかった文法やコツをまとめていきます。
-結論としては[TRPL](https://doc.rust-jp.rs/book/second-edition/)読め！ ですね。
+なお、[TRPL](https://doc.rust-jp.rs/book/second-edition/)をしっかり読んでいればどれも問題ないものです。
 
 ### サイズ不明な構造体は Box に格納する
 
@@ -40,6 +45,21 @@ EXPOSE 8000
 
 Rust では一部の文脈において、対象のサイズをコンパイル時に特定できている必要があります。
 具体的に言うと、以下の記述は怒られます。
+
+```rust
+trait Shape {
+  fn area(&self) -> f32;
+}
+
+fn print_area(s: Shape) { // `s` doesn't have a size known at compile-time
+  println!("{}", s.area());
+}
+```
+
+`Shape`はトレイトなので、定義した段階ではそのサイズは不明です。底辺と高さを持つ三角形かもしれませんし、半径のみを持つ円形かもしれません。
+そのため、実行するまでサイズが判断できず、コンパイルできません。
+
+このとき、
 
 ### ?演算子
 
